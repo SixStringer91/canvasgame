@@ -149,53 +149,54 @@
 
     }
 
-    MainTitle.prototype.check = function() {
-        this.loadAudio();
-        this.loadImg();
-        this.loadFonts();
-        if (this.allCount === this.loadCount) return this.loaded === true
+    MainTitle.prototype.check = async function() {
+        this.allCount += this.listPng.length
+        this.allCount += this.listAudio.length
+        this.allCount += this.listFonts.length
+
+        await Promise.all([this.loadAudio(), this.loadImg(), this.loadFonts()]);
+        if (this.allCount >= this.loadCount) return this.loaded === true
     }
 
 
 
 
-    MainTitle.prototype.loadImg = function() {
-        for (let i = 0; i < this.listPng.length; i++) {
-            this.allCount++
-                let img = document.createElement('img')
-            img.src = this.listPng[i]
-            img.onload = (function() {
-                this.loadCount++
-                    img.remove();
-            }).bind(this);
-        }
+    MainTitle.prototype.loadImg = async function() {
+        const promises = this.listPng.map(url => {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    this.loadCount++
+                    resolve(img);
+                };
+                img.onerror = reject;
+                img.src = url;
+            });
+        })
+        return Promise.all(promises);
     };
 
     MainTitle.prototype.loadAudio = function() {
-
-        for (let i = 0; i < this.listAudio.length; i++) {
-            this.allCount++
-                let audio = document.createElement('audio')
-            audio.src = this.listAudio[i];
-            audio.oncanplaythrough = (function() {
-                this.loadCount++
-                    audio.remove();
-            }).bind(this)
-
-        }
+        const promises = this.listAudio.map(url => {
+            return new Promise((resolve, reject) => {
+                const audio = new Audio();
+                audio.oncanplaythrough = () => {
+                    this.loadCount++
+                    resolve(audio);
+                };
+                audio.onerror = reject;
+                audio.src = url;
+            });
+        })
+        return Promise.all(promises);
     }
-    MainTitle.prototype.loadFonts = function() {
-
+    MainTitle.prototype.loadFonts = async function() {
         for (let i = 0; i < this.listFonts.length; i++) {
-            this.allCount++
-                let font = new FontFace(this.listFonts[i].name, this.listFonts[i].url);
-            font.load();
+            let font = new FontFace(this.listFonts[i].name, this.listFonts[i].url);
+            await font.load();
             document.fonts.add(font);
             this.loadCount++
-
         }
     }
-
-
     Game.MainTitle = MainTitle
 })()
